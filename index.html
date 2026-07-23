@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>减脂打卡</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
+</script>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --card: #14141f;
+  --card2: #1a1a28;
+  --accent: #ff6b35;
+  --accent2: #ff8c5a;
+  --teal: #4ecdc4;
+  --green: #2ecc71;
+  --red: #e74c3c;
+  --text: #e0e0e0;
+  --text2: #999;
+  --border: rgba(255,255,255,0.06);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.app {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 40px;
+}
+
+/* header */
+.header {
+  text-align: center;
+  padding: 20px 0 8px;
+}
+.header h1 {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  background: linear-gradient(135deg, var(--accent), #ff9a56);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.header .subtitle {
+  font-size: 13px;
+  color: var(--text2);
+  margin-top: 2px;
+}
+
+/* card */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+}
+
+/* progress */
+.progress-section {}
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+.day-badge {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.day-badge span { font-size: 36px; font-weight: 900; }
+.progress-stats {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+.stat-item {
+  flex: 1;
+  background: var(--card2);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  text-align: center;
+}
+.stat-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+}
+.stat-label {
+  font-size: 11px;
+  color: var(--text2);
+  margin-top: 2px;
+}
+.stat-value.lost { color: var(--green); }
+.stat-value.remain { color: var(--accent); }
+.progress-bar-wrap {
+  background: rgba(255,255,255,0.06);
+  border-radius: 10px;
+  height: 10px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #ff9a56);
+  border-radius: 10px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 0;
+}
+
+/* fasting */
+.fasting-card {}
+.fasting-status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.fasting-indicator {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.fasting-indicator.eating { background: rgba(46,204,113,0.15); }
+.fasting-indicator.fasting { background: rgba(155,89,182,0.15); }
+.fasting-info {}
+.fasting-label {
+  font-size: 14px; font-weight: 700;
+}
+.fasting-label.eating { color: var(--green); }
+.fasting-label.fasting { color: #9b59b6; }
+.fasting-timer {
+  font-size: 32px; font-weight: 900; font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+}
+.fasting-timeline {
+  position: relative;
+  height: 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  margin: 8px 0 6px;
+}
+.fasting-timeline-fill {
+  position: absolute;
+  height: 100%;
+  border-radius: 3px;
+  transition: width 1s linear;
+}
+.fasting-timeline-fill.eating { background: var(--green); left:0; }
+.fasting-timeline-fill.fasting { background: #9b59b6; right:0; }
+.fasting-labels {
+  display: flex; justify-content: space-between;
+  font-size: 10px; color: var(--text2);
+}
+.fasting-current-dot {
+  position: absolute;
+  top: -4px;
+  width: 14px; height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(255,255,255,0.5);
+  transform: translateX(-50%);
+  transition: left 1s linear;
+}
+
+/* tasks */
+.tasks-card {}
+.tasks-card h3 {
+  font-size: 15px; font-weight: 700;
+  display: flex; align-items: center; gap: 6px;
+}
+.edit-toggle-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: var(--text2);
+  padding: 5px 12px;
+  border-radius: 14px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.edit-toggle-btn:hover, .edit-toggle-btn.active { color: var(--accent); border-color: var(--accent); }
+.task-edit-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 10px;
+  background: var(--card2);
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.task-edit-row input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  color: #fff;
+  font-size: 13px;
+  outline: none;
+}
+.task-edit-row input:focus { border-color: var(--accent); }
+.task-edit-row .emoji-input { width: 42px; text-align: center; font-size: 18px; }
+.task-edit-row .name-input { flex: 1; min-width: 60px; }
+.task-edit-row .time-input { width: 60px; text-align: center; }
+.task-edit-row .tip-input { width: 100%; font-size: 11px; color: var(--text2); }
+.task-edit-delete {
+  background: transparent;
+  border: 1px solid rgba(231,76,60,0.3);
+  color: var(--red);
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.task-edit-delete:active { background: rgba(231,76,60,0.15); }
+.task-item.edit-mode { cursor: default; }
+.task-item .edit-icon {
+  display: none;
+  font-size: 12px;
+  color: var(--text2);
+  cursor: pointer;
+  padding: 4px;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+.task-item .edit-icon:hover { opacity: 1; color: var(--accent); }
+.add-task-btn {
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  border: 1px dashed rgba(255,255,255,0.12);
+  color: var(--text2);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: all 0.2s;
+}
+.add-task-btn:hover { border-color: var(--accent); color: var(--accent); }
+.task-list { display: flex; flex-direction: column; gap: 10px; }
+.task-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  background: var(--card2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+.task-item:active { transform: scale(0.98); }
+.task-item.done {
+  border-color: rgba(46,204,113,0.2);
+  background: rgba(46,204,113,0.05);
+}
+.task-check {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.25s;
+  flex-shrink: 0;
+  font-size: 14px;
+  color: transparent;
+}
+.task-item.done .task-check {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+.task-icon { font-size: 20px; flex-shrink: 0; }
+.task-name { font-size: 14px; font-weight: 600; flex:1; }
+.task-item.done .task-name {
+  text-decoration: line-through;
+  color: var(--text2);
+}
+.task-time { font-size: 11px; color: var(--text2); }
+.tasks-summary {
+  margin-top: 12px;
+  font-size: 12px; color: var(--text2);
+  text-align: center;
+}
+
+/* water */
+.water-card {}
+.water-header {
+  display: flex; justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+.water-header h3 { font-size: 15px; font-weight: 700; }
+.water-amount {
+  font-size: 13px; color: var(--teal); font-weight: 700;
+}
+.water-progress-wrap {
+  background: rgba(255,255,255,0.06);
+  border-radius: 10px;
+  height: 12px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.water-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2196F3, var(--teal));
+  border-radius: 10px;
+  transition: width 0.4s;
+}
+.water-buttons {
+  display: flex; gap: 10px;
+}
+.water-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #fff;
+}
+.water-btn:active { transform: scale(0.96); }
+.water-btn.small { background: #2196F3; }
+.water-btn.large { background: #0d7377; }
+.water-reset {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: var(--text2);
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  cursor: pointer;
+  width: 60px;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.water-reset:active { background: rgba(255,255,255,0.05); }
+.water-glasses {
+  display: flex; gap: 3px; margin-bottom: 14px; flex-wrap: wrap;
+}
+.water-glass {
+  width: 18px; height: 24px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px 3px 6px 6px;
+  transition: background 0.3s;
+}
+.water-glass.filled { background: var(--teal); }
+
+/* weight */
+.weight-card {}
+.weight-card h3 {
+  font-size: 15px; font-weight: 700;
+  margin-bottom: 14px;
+}
+.weight-input-row {
+  display: flex; gap: 10px; margin-bottom: 16px;
+}
+.weight-input {
+  flex: 1;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 18px; font-weight: 700;
+  color: #fff;
+  outline: none;
+  text-align: center;
+}
+.weight-input:focus { border-color: var(--accent); }
+.weight-input::placeholder { color: var(--text2); font-weight: 400; font-size: 14px; }
+.weight-unit {
+  display: flex; align-items: center;
+  font-size: 14px; color: var(--text2);
+  font-weight: 600;
+}
+.weight-save-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 12px 20px;
+  font-size: 14px; font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.weight-save-btn:active { transform: scale(0.96); opacity: 0.9; }
+.chart-wrap {
+  position: relative;
+  height: 220px;
+  margin-top: 8px;
+}
+.chart-wrap canvas { width: 100% !important; }
+
+/* settings */
+.settings-toggle {
+  position: fixed;
+  top: 16px; right: 16px;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+  z-index: 10;
+}
+.settings-toggle:active { transform: scale(0.9); }
+.modal-overlay {
+  display: none;
+  position: fixed; inset:0;
+  background: rgba(0,0,0,0.7);
+  z-index: 100;
+  justify-content: center; align-items: flex-end;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--card);
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 24px 20px 32px;
+  width: 100%; max-width: 440px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.modal h3 {
+  font-size: 18px; font-weight: 700;
+  margin-bottom: 18px;
+  text-align: center;
+}
+.form-group {
+  margin-bottom: 14px;
+}
+.form-group label {
+  display: block;
+  font-size: 12px; color: var(--text2);
+  margin-bottom: 4px; font-weight: 600;
+}
+.form-group input {
+  width: 100%;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-size: 15px; color: #fff;
+  outline: none;
+}
+.form-group input:focus { border-color: var(--accent); }
+.modal-buttons {
+  display: flex; gap: 10px; margin-top: 20px;
+}
+.modal-btn {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 15px; font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.modal-btn.primary { background: var(--accent); color: #fff; }
+.modal-btn.secondary { background: var(--card2); color: var(--text); border: 1px solid var(--border); }
+.modal-btn:active { transform: scale(0.96); }
+
+/* reset button */
+.reset-section {
+  text-align: center;
+  margin-top: 8px;
+}
+.reset-btn {
+  background: transparent;
+  border: 1px solid rgba(231,76,60,0.3);
+  color: var(--red);
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.reset-btn:active { background: rgba(231,76,60,0.1); }
+
+/* toast */
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--card2);
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 20px;
+  font-size: 13px; font-weight: 600;
+  z-index: 200;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+.toast.show { opacity: 1; }
+
+/* animations */
+@keyframes popIn {
+  0% { transform: scale(0.8); opacity: 0; }
+  70% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.pop { animation: popIn 0.3s ease-out; }
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <div class="header">
+    <h1>减脂打卡</h1>
+    <div class="subtitle"><span id="subtitleDays">38</span>天挑战 · 自律即自由</div>
+  </div>
+
+  <!-- 进度卡片 -->
+  <div class="card progress-section">
+    <div class="progress-header">
+      <div class="day-badge">第 <span id="currentDay">1</span> 天 <span style="font-size:13px;color:var(--text2);font-weight:400;" id="totalDaysLabel">/ 38</span></div>
+      <div style="font-size:13px;color:var(--text2);" id="dateRange"></div>
+    </div>
+    <div class="progress-stats">
+      <div class="stat-item">
+        <div class="stat-value lost" id="weightLost">0.0</div>
+        <div class="stat-label">已减 (kg)</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value remain" id="weightRemain">5.0</div>
+        <div class="stat-label">剩余目标 (kg)</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="progressPercent" style="font-size:18px;">0%</div>
+        <div class="stat-label">体重进度</div>
+      </div>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- 断食倒计时 -->
+  <div class="card fasting-card">
+    <div class="fasting-status-row">
+      <div class="fasting-indicator" id="fastingIndicator">⏱️</div>
+      <div class="fasting-info">
+        <div class="fasting-label" id="fastingLabel">加载中…</div>
+        <div class="fasting-timer" id="fastingTimer">00:00:00</div>
+      </div>
+    </div>
+    <div class="fasting-timeline">
+      <div class="fasting-timeline-fill" id="fastingBar" style="width:0%"></div>
+      <div class="fasting-current-dot" id="fastingDot" style="left:0%"></div>
+    </div>
+    <div class="fasting-labels">
+      <span>08:00 开窗</span>
+      <span>14:00 关窗</span>
+      <span>08:00 开窗</span>
+    </div>
+  </div>
+
+  <!-- 每日打卡 -->
+  <div class="card tasks-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <h3 style="margin:0;">📋 每日打卡</h3>
+      <button class="edit-toggle-btn" id="editToggleBtn" onclick="toggleEditMode()">✎ 编辑</button>
+    </div>
+    <div class="task-list" id="taskList"></div>
+    <button class="add-task-btn" id="addTaskBtn" style="display:none;" onclick="addNewTask()">+ 添加任务</button>
+    <div class="tasks-summary" id="tasksSummary">今日尚未打卡</div>
+  </div>
+
+  <!-- 饮水追踪 -->
+  <div class="card water-card">
+    <div class="water-header">
+      <h3>💧 饮水量</h3>
+      <div class="water-amount"><span id="waterCurrent">0</span> / <span id="waterTarget">3000</span> ml</div>
+    </div>
+    <div class="water-glasses" id="waterGlasses"></div>
+    <div class="water-progress-wrap">
+      <div class="water-progress-fill" id="waterBar" style="width:0%"></div>
+    </div>
+    <div class="water-buttons">
+      <button class="water-btn small" onclick="addWater(250)">+250 ml</button>
+      <button class="water-btn large" onclick="addWater(500)">+500 ml</button>
+      <button class="water-reset" onclick="resetWater()">归零</button>
+    </div>
+  </div>
+
+  <!-- 体重记录 -->
+  <div class="card weight-card">
+    <h3>⚖️ 体重记录</h3>
+    <div class="weight-input-row">
+      <input type="number" class="weight-input" id="weightInput" placeholder="空腹体重" step="0.1" min="30" max="200" inputmode="decimal">
+      <span class="weight-unit">kg</span>
+      <button class="weight-save-btn" onclick="saveWeight()">记录</button>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="weightChart"></canvas>
+    </div>
+  </div>
+
+  <!-- 重置 -->
+  <div class="reset-section">
+    <button class="reset-btn" onclick="resetAll()">重置全部数据</button>
+  </div>
+</div>
+
+<!-- 设置齿轮 -->
+<button class="settings-toggle" onclick="openSettings()" title="设置">⚙️</button>
+
+<!-- 设置弹窗 -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <h3>⚙️ 目标设置</h3>
+    <div class="form-group">
+      <label>开始日期</label>
+      <input type="date" id="setStartDate" onchange="calcDaysInSettings()">
+    </div>
+    <div class="form-group">
+      <label>结束日期</label>
+      <input type="date" id="setEndDate" onchange="calcDaysInSettings()">
+      <div style="font-size:11px;color:var(--accent);margin-top:4px;" id="calcDaysHint"></div>
+    </div>
+    <div class="form-group">
+      <label>起始体重 (kg)</label>
+      <input type="number" id="setStartWeight" step="0.1" min="30" max="200" inputmode="decimal">
+    </div>
+    <div class="form-group">
+      <label>目标体重 (kg)</label>
+      <input type="number" id="setTargetWeight" step="0.1" min="30" max="200" inputmode="decimal">
+    </div>
+    <div class="form-group">
+      <label>每日饮水目标 (ml)</label>
+      <input type="number" id="setWaterTarget" min="500" max="10000" step="100">
+    </div>
+    <div class="modal-buttons">
+      <button class="modal-btn secondary" onclick="closeSettings()">取消</button>
+      <button class="modal-btn primary" onclick="saveSettings()">保存设置</button>
+    </div>
+  </div>
+</div>
+
+<!-- 提示 -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ 数据管理 ============
+const STORAGE_KEY = 'fitness_tracker_data';
+
+function getToday() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+const defaultData = {
+  settings: {
+    startDate: '2026-07-20',
+    startingWeight: 80,
+    targetWeight: 74,
+    totalDays: 38,
+    dailyWaterTarget: 3000
+  },
+  records: {}
+};
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      // merge defaults for any missing fields
+      if (!data.settings) data.settings = { ...defaultData.settings };
+      if (!data.records) data.records = {};
+      return data;
+    }
+  } catch(e) {}
+  return JSON.parse(JSON.stringify(defaultData));
+}
+
+function saveData(data) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch(e) {
+    showToast('存储空间不足，请清理浏览器数据');
+  }
+}
+
+let appData = loadData();
+let chart = null;
+
+// ensure today's record exists
+function ensureTodayRecord() {
+  const today = getToday();
+  if (!appData.records[today]) {
+    const tasks = {};
+    const taskDefs = getTaskDefs();
+    taskDefs.forEach(t => { tasks[t.key] = false; });
+    appData.records[today] = {
+      weight: null,
+      tasks: tasks,
+      water: 0
+    };
+    saveData(appData);
+  } else {
+    // ensure any newly added task keys exist in existing records
+    const record = appData.records[today];
+    if (record.tasks) {
+      const taskDefs = getTaskDefs();
+      let changed = false;
+      taskDefs.forEach(t => {
+        if (record.tasks[t.key] === undefined) {
+          record.tasks[t.key] = false;
+          changed = true;
+        }
+      });
+      if (changed) saveData(appData);
+    }
+  }
+  return appData.records[today];
+}
+
+function getTodayRecord() {
+  return ensureTodayRecord();
+}
+
+// ============ Toast ============
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+// ============ 进度计算 ============
+function getCurrentDay() {
+  const s = appData.settings;
+  const start = new Date(s.startDate + 'T00:00:00');
+  const today = new Date(getToday() + 'T00:00:00');
+  const diff = Math.floor((today - start) / 86400000) + 1;
+  return Math.max(1, Math.min(diff, s.totalDays));
+}
+
+function getLatestWeight() {
+  const sorted = Object.keys(appData.records).sort();
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    const w = appData.records[sorted[i]].weight;
+    if (w !== null && w !== undefined) return w;
+  }
+  return null;
+}
+
+function updateProgress() {
+  const s = appData.settings;
+  const day = getCurrentDay();
+  const latestWeight = getLatestWeight();
+  const weightLost = latestWeight !== null ? Math.max(0, s.startingWeight - latestWeight) : 0;
+  const totalTarget = s.startingWeight - s.targetWeight;
+  const remain = Math.max(0, s.targetWeight - (latestWeight ?? s.startingWeight));
+  const percent = totalTarget > 0 ? Math.min(100, Math.round((weightLost / totalTarget) * 100)) : 0;
+
+  document.getElementById('currentDay').textContent = day;
+  document.getElementById('totalDaysLabel').textContent = `/ ${s.totalDays}`;
+  document.getElementById('subtitleDays').textContent = s.totalDays;
+  document.title = `减脂打卡 · ${s.totalDays}天挑战`;
+  document.getElementById('dateRange').textContent = `${s.startDate} → 第${s.totalDays}天`;
+  document.getElementById('weightLost').textContent = weightLost.toFixed(1);
+  document.getElementById('weightRemain').textContent = remain.toFixed(1);
+  document.getElementById('progressPercent').textContent = percent + '%';
+  document.getElementById('progressBar').style.width = percent + '%';
+}
+
+// ============ 断食倒计时 ============
+function getFastingStatus() {
+  const now = new Date();
+  const h = now.getHours();
+  const m = now.getMinutes();
+  const s = now.getSeconds();
+  const currentMinutes = h * 60 + m;
+
+  // eating window: 08:00 (480min) to 14:00 (840min)
+  if (currentMinutes >= 480 && currentMinutes < 840) {
+    // eating window: countdown to 14:00
+    const remainingMin = 840 - currentMinutes;
+    const remainingSec = remainingMin * 60 - s;
+    return {
+      status: 'eating',
+      label: '进食窗口 · 注意热量',
+      remainingSec,
+      totalSec: 6 * 3600, // 6 hours eating
+      elapsedSec: (6 * 3600) - remainingSec
+    };
+  } else {
+    // fasting window: countdown to 08:00 next day
+    let remainingMin;
+    if (currentMinutes >= 840) {
+      remainingMin = (24 * 60) - currentMinutes + 480; // until 08:00 next day
+    } else {
+      remainingMin = 480 - currentMinutes; // before 08:00 today
+    }
+    const remainingSec = remainingMin * 60 - s;
+    return {
+      status: 'fasting',
+      label: '断食中 · 只喝水',
+      remainingSec,
+      totalSec: 18 * 3600, // 18 hours fasting
+      elapsedSec: (18 * 3600) - remainingSec
+    };
+  }
+}
+
+function formatTime(seconds) {
+  if (seconds < 0) seconds = 0;
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function updateFastingTimer() {
+  const fs = getFastingStatus();
+  const indicator = document.getElementById('fastingIndicator');
+  const label = document.getElementById('fastingLabel');
+  const timer = document.getElementById('fastingTimer');
+  const bar = document.getElementById('fastingBar');
+  const dot = document.getElementById('fastingDot');
+
+  indicator.className = 'fasting-indicator ' + fs.status;
+  indicator.textContent = fs.status === 'eating' ? '🍽️' : '🌙';
+
+  label.className = 'fasting-label ' + fs.status;
+  label.textContent = fs.label;
+
+  timer.textContent = formatTime(fs.remainingSec);
+
+  const pct = Math.min(100, Math.max(0, (fs.elapsedSec / fs.totalSec) * 100));
+
+  if (fs.status === 'eating') {
+    bar.className = 'fasting-timeline-fill eating';
+    bar.style.width = pct + '%';
+    bar.style.left = '0';
+    dot.style.left = pct + '%';
+  } else {
+    bar.className = 'fasting-timeline-fill fasting';
+    bar.style.width = pct + '%';
+    bar.style.right = '0';
+    dot.style.left = (100 - pct) + '%';
+  }
+}
+
+// ============ 每日任务 ============
+const defaultTaskDefs = [
+  { key: 'breakfast',  icon: '🥣', name: '早餐',       time: '08:00', tip: '高蛋白低碳水' },
+  { key: 'anaerobic',  icon: '🏋️', name: '无氧训练',   time: '09:30', tip: '力量 / 抗阻' },
+  { key: 'aerobic',    icon: '🏃', name: '有氧训练',   time: '10:30', tip: '慢跑 / 快走 45min' },
+  { key: 'lunch',      icon: '🥗', name: '练后午餐',   time: '12:00', tip: '蛋白质 + 膳食纤维' },
+  { key: 'supplement', icon: '🍱', name: '关窗补给',   time: '13:30', tip: '14:00前最后一餐' },
+  { key: 'earlySleep', icon: '😴', name: '早睡',       time: '22:30', tip: '睡眠修复黄金期' },
+];
+
+let editingTasks = false;
+
+function getTaskDefs() {
+  if (!appData.settings.taskDefs) {
+    appData.settings.taskDefs = JSON.parse(JSON.stringify(defaultTaskDefs));
+    saveData(appData);
+  }
+  return appData.settings.taskDefs;
+}
+
+function buildTaskList() {
+  const list = document.getElementById('taskList');
+  const record = getTodayRecord();
+  const taskDefs = getTaskDefs();
+
+  if (editingTasks) {
+    buildEditList(list, taskDefs);
+  } else {
+    buildDisplayList(list, record, taskDefs);
+  }
+  updateTasksSummary();
+}
+
+function buildDisplayList(list, record, taskDefs) {
+  list.innerHTML = taskDefs.map(t => {
+    const done = record.tasks[t.key];
+    return `
+      <div class="task-item ${done ? 'done' : ''}" data-key="${t.key}">
+        <div class="task-check" onclick="event.stopPropagation(); toggleTask('${t.key}')">✓</div>
+        <span class="task-icon" onclick="event.stopPropagation(); toggleTask('${t.key}')">${t.icon}</span>
+        <span class="task-name" onclick="event.stopPropagation(); toggleTask('${t.key}')">${t.name}</span>
+        <span class="task-time" onclick="event.stopPropagation(); toggleTask('${t.key}')">${t.time}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function buildEditList(list, taskDefs) {
+  list.innerHTML = taskDefs.map((t, i) => `
+    <div class="task-edit-row" data-index="${i}">
+      <input class="emoji-input" value="${t.icon}" placeholder="🥣" maxlength="4" onchange="updateTaskDef(${i},'icon',this.value)">
+      <input class="name-input" value="${t.name}" placeholder="任务名" onchange="updateTaskDef(${i},'name',this.value)">
+      <input class="time-input" value="${t.time}" placeholder="08:00" onchange="updateTaskDef(${i},'time',this.value)">
+      <button class="task-edit-delete" onclick="deleteTask(${i})" title="删除">×</button>
+      <input class="tip-input" value="${t.tip || ''}" placeholder="提示语（可选）" onchange="updateTaskDef(${i},'tip',this.value)">
+    </div>
+  `).join('');
+}
+
+function toggleEditMode() {
+  editingTasks = !editingTasks;
+  const btn = document.getElementById('editToggleBtn');
+  const addBtn = document.getElementById('addTaskBtn');
+
+  if (editingTasks) {
+    btn.textContent = '✓ 完成';
+    btn.classList.add('active');
+    addBtn.style.display = 'block';
+  } else {
+    btn.textContent = '✎ 编辑';
+    btn.classList.remove('active');
+    addBtn.style.display = 'none';
+  }
+  buildTaskList();
+}
+
+function updateTaskDef(index, field, value) {
+  const taskDefs = getTaskDefs();
+  taskDefs[index][field] = value;
+  saveData(appData);
+}
+
+function deleteTask(index) {
+  const taskDefs = getTaskDefs();
+  if (taskDefs.length <= 1) {
+    showToast('至少保留一个任务');
+    return;
+  }
+  const removed = taskDefs.splice(index, 1)[0];
+  // clean up task data for removed key
+  Object.values(appData.records).forEach(r => {
+    if (r.tasks && r.tasks[removed.key] !== undefined) delete r.tasks[removed.key];
+  });
+  saveData(appData);
+  buildTaskList();
+  showToast(`已删除「${removed.name}」`);
+}
+
+function addNewTask() {
+  const taskDefs = getTaskDefs();
+  const key = 'task_' + Date.now();
+  taskDefs.push({ key, icon: '📌', name: '新任务', time: '12:00', tip: '' });
+  // ensure existing records have this task key initialized
+  Object.values(appData.records).forEach(r => {
+    if (r.tasks && r.tasks[key] === undefined) r.tasks[key] = false;
+  });
+  saveData(appData);
+  buildTaskList();
+}
+
+function toggleTask(key) {
+  if (editingTasks) return;
+  const record = getTodayRecord();
+  if (record.tasks[key] === undefined) record.tasks[key] = false;
+  record.tasks[key] = !record.tasks[key];
+  saveData(appData);
+
+  const item = document.querySelector(`.task-item[data-key="${key}"]`);
+  if (item) {
+    if (record.tasks[key]) {
+      item.classList.add('done', 'pop');
+    } else {
+      item.classList.remove('done');
+    }
+    setTimeout(() => item.classList.remove('pop'), 300);
+  }
+  updateTasksSummary();
+}
+
+function updateTasksSummary() {
+  const record = getTodayRecord();
+  const taskDefs = getTaskDefs();
+  const done = taskDefs.filter(t => record.tasks[t.key]).length;
+  const total = taskDefs.length;
+  const summary = document.getElementById('tasksSummary');
+
+  if (editingTasks) {
+    summary.textContent = '编辑模式 · 修改后点击「完成」保存';
+    summary.style.color = '';
+  } else if (done === 0) {
+    summary.textContent = '今日尚未打卡 · 点击任务开始';
+    summary.style.color = '';
+  } else if (done === total) {
+    summary.textContent = '🎉 今日全部完成！太棒了！';
+    summary.style.color = '#2ecc71';
+  } else {
+    summary.textContent = `已完成 ${done}/${total} · 继续加油`;
+    summary.style.color = '';
+  }
+}
+
+// ============ 饮水追踪 ============
+function addWater(amount) {
+  const record = getTodayRecord();
+  record.water += amount;
+  saveData(appData);
+  updateWaterUI();
+  showToast(`+${amount}ml 💧`);
+}
+
+function resetWater() {
+  const record = getTodayRecord();
+  record.water = 0;
+  saveData(appData);
+  updateWaterUI();
+}
+
+function updateWaterUI() {
+  const record = getTodayRecord();
+  const target = appData.settings.dailyWaterTarget;
+  document.getElementById('waterCurrent').textContent = record.water;
+  document.getElementById('waterTarget').textContent = target;
+  const pct = Math.min(100, Math.round((record.water / target) * 100));
+  document.getElementById('waterBar').style.width = pct + '%';
+
+  // render glasses (each glass = 250ml)
+  const totalGlasses = Math.ceil(target / 250);
+  const filledGlasses = Math.floor(record.water / 250);
+  const container = document.getElementById('waterGlasses');
+  let html = '';
+  for (let i = 0; i < totalGlasses; i++) {
+    html += `<div class="water-glass ${i < filledGlasses ? 'filled' : ''}"></div>`;
+  }
+  container.innerHTML = html;
+}
+
+// ============ 体重记录 & 图表 ============
+function saveWeight() {
+  const input = document.getElementById('weightInput');
+  const val = parseFloat(input.value);
+  if (isNaN(val) || val < 30 || val > 200) {
+    showToast('请输入有效体重 (30-200 kg)');
+    return;
+  }
+  const record = getTodayRecord();
+  record.weight = val;
+  saveData(appData);
+  input.value = '';
+  showToast(`体重 ${val.toFixed(1)} kg 已记录 ✓`);
+  updateProgress();
+  updateChart();
+}
+
+function getWeightData() {
+  const s = appData.settings;
+  const points = [];
+  const sorted = Object.keys(appData.records).sort();
+
+  for (const date of sorted) {
+    const r = appData.records[date];
+    if (r.weight !== null && r.weight !== undefined) {
+      const day = Math.floor((new Date(date + 'T00:00:00') - new Date(s.startDate + 'T00:00:00')) / 86400000) + 1;
+      if (day >= 1 && day <= s.totalDays) {
+        points.push({ day, weight: r.weight });
+      }
+    }
+  }
+  return points;
+}
+
+function getTargetLine() {
+  const s = appData.settings;
+  const points = [];
+  for (let d = 1; d <= s.totalDays; d++) {
+    const w = s.startingWeight - (s.startingWeight - s.targetWeight) * ((d - 1) / (s.totalDays - 1));
+    points.push({ day: d, weight: Math.round(w * 10) / 10 });
+  }
+  return points;
+}
+
+function updateChart() {
+  const actual = getWeightData();
+  const target = getTargetLine();
+  const s = appData.settings;
+  const ctx = document.getElementById('weightChart').getContext('2d');
+
+  if (chart) chart.destroy();
+
+  const gradient = ctx.createLinearGradient(0, 0, 0, 220);
+  gradient.addColorStop(0, 'rgba(255,107,53,0.25)');
+  gradient.addColorStop(1, 'rgba(255,107,53,0)');
+
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      datasets: [
+        {
+          label: '实际体重',
+          data: actual.map(p => ({ x: p.day, y: p.weight })),
+          borderColor: '#ff6b35',
+          backgroundColor: gradient,
+          borderWidth: 2.5,
+          pointBackgroundColor: '#ff6b35',
+          pointRadius: actual.length === 1 ? 6 : 4,
+          pointHoverRadius: 7,
+          fill: true,
+          tension: 0.2,
+          order: 1
+        },
+        {
+          label: '目标斜率',
+          data: target.map(p => ({ x: p.day, y: p.weight })),
+          borderColor: 'rgba(255,255,255,0.25)',
+          borderWidth: 1.5,
+          borderDash: [6, 3],
+          pointRadius: 0,
+          fill: false,
+          tension: 0,
+          order: 2
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            color: '#999',
+            usePointStyle: true,
+            padding: 20,
+            font: { size: 11 }
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)} kg`
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'linear',
+          title: { display: true, text: '天数', color: '#999', font: { size: 11 } },
+          min: 1,
+          max: s.totalDays,
+          ticks: { color: '#666', stepSize: Math.ceil(s.totalDays / 10), font: { size: 10 } },
+          grid: { color: 'rgba(255,255,255,0.04)' }
+        },
+        y: {
+          title: { display: true, text: '体重 (kg)', color: '#999', font: { size: 11 } },
+          ticks: { color: '#666', font: { size: 10 }, callback: v => v.toFixed(1) },
+          grid: { color: 'rgba(255,255,255,0.04)' }
+        }
+      }
+    }
+  });
+}
+
+// ============ 设置 ============
+function calcDaysInSettings() {
+  const startVal = document.getElementById('setStartDate').value;
+  const endVal = document.getElementById('setEndDate').value;
+  const hint = document.getElementById('calcDaysHint');
+  if (startVal && endVal) {
+    const start = new Date(startVal + 'T00:00:00');
+    const end = new Date(endVal + 'T00:00:00');
+    const days = Math.floor((end - start) / 86400000) + 1;
+    if (days >= 1) {
+      hint.textContent = `共计 ${days} 天挑战`;
+      hint.style.color = 'var(--accent)';
+    } else {
+      hint.textContent = '结束日期必须晚于开始日期';
+      hint.style.color = 'var(--red)';
+    }
+  } else {
+    hint.textContent = '';
+  }
+}
+
+function openSettings() {
+  const s = appData.settings;
+  document.getElementById('setStartDate').value = s.startDate;
+  // calculate end date from start date + totalDays
+  const start = new Date(s.startDate + 'T00:00:00');
+  const end = new Date(start.getTime() + (s.totalDays - 1) * 86400000);
+  const endStr = `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`;
+  document.getElementById('setEndDate').value = endStr;
+  document.getElementById('setStartWeight').value = s.startingWeight;
+  document.getElementById('setTargetWeight').value = s.targetWeight;
+  document.getElementById('setWaterTarget').value = s.dailyWaterTarget;
+  calcDaysInSettings();
+  document.getElementById('settingsModal').classList.add('show');
+}
+
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('show');
+}
+
+function saveSettings() {
+  const s = appData.settings;
+  s.startDate = document.getElementById('setStartDate').value || s.startDate;
+  const endDateVal = document.getElementById('setEndDate').value;
+  if (endDateVal) {
+    const start = new Date(s.startDate + 'T00:00:00');
+    const end = new Date(endDateVal + 'T00:00:00');
+    const days = Math.floor((end - start) / 86400000) + 1;
+    if (days < 1) {
+      showToast('结束日期必须晚于开始日期');
+      return;
+    }
+    s.totalDays = days;
+  }
+  s.startingWeight = parseFloat(document.getElementById('setStartWeight').value) || s.startingWeight;
+  s.targetWeight = parseFloat(document.getElementById('setTargetWeight').value) || s.targetWeight;
+  s.dailyWaterTarget = parseInt(document.getElementById('setWaterTarget').value) || s.dailyWaterTarget;
+
+  if (s.targetWeight >= s.startingWeight) {
+    showToast('目标体重需小于起始体重');
+    return;
+  }
+
+  saveData(appData);
+  closeSettings();
+  refreshAll();
+  showToast('设置已保存 ✓');
+}
+
+function resetAll() {
+  if (confirm('确定要重置全部数据吗？此操作不可恢复！')) {
+    appData = JSON.parse(JSON.stringify(defaultData));
+    saveData(appData);
+    refreshAll();
+    showToast('数据已重置');
+  }
+}
+
+// ============ 全局刷新 ============
+function refreshAll() {
+  updateProgress();
+  updateFastingTimer();
+  buildTaskList();
+  updateWaterUI();
+  updateChart();
+}
+
+// ============ 初始化 ============
+function init() {
+  ensureTodayRecord();
+  refreshAll();
+
+  // fasting timer updates every second
+  setInterval(updateFastingTimer, 1000);
+
+  // check for day change every minute
+  setInterval(() => {
+    ensureTodayRecord();
+    buildTaskList();
+    updateWaterUI();
+  }, 60000);
+
+  // close settings modal on overlay click
+  document.getElementById('settingsModal').addEventListener('click', function(e) {
+    if (e.target === this) closeSettings();
+  });
+
+  // load weight input from URL if needed, otherwise set placeholder
+  const input = document.getElementById('weightInput');
+  const record = getTodayRecord();
+  if (record.weight) {
+    input.placeholder = `今日已记录: ${record.weight.toFixed(1)} kg`;
+  }
+
+  // Enter key to save weight
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') saveWeight();
+  });
+}
+
+init();
+</script>
+</body>
+</html>
